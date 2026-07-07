@@ -1,0 +1,1383 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Car Motion Studio</title>
+  <style>
+    :root {
+      --bg: #f5f6f8;
+      --panel: rgba(255,255,255,.82);
+      --panel-solid: #ffffff;
+      --text: #111318;
+      --muted: #6f7480;
+      --soft: #eef0f4;
+      --line: rgba(19,23,32,.10);
+      --line-strong: rgba(19,23,32,.16);
+      --primary: #111318;
+      --primary-soft: #1f2937;
+      --accent: #0a84ff;
+      --green: #22c55e;
+      --warning: #ff9f0a;
+      --shadow: 0 24px 70px rgba(21, 31, 46, .12);
+      --shadow-soft: 0 12px 36px rgba(21, 31, 46, .08);
+      --radius-lg: 28px;
+      --radius-md: 20px;
+      --radius-sm: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { min-height: 100%; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", "Noto Sans KR", "Apple SD Gothic Neo", Arial, sans-serif;
+      background:
+        radial-gradient(circle at 18% 8%, rgba(10,132,255,.14), transparent 34%),
+        radial-gradient(circle at 86% 4%, rgba(52,199,89,.13), transparent 30%),
+        linear-gradient(180deg, #fbfbfc 0%, var(--bg) 44%, #eceff4 100%);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image: linear-gradient(rgba(255,255,255,.35) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.32) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: linear-gradient(180deg, rgba(0,0,0,.7), transparent 70%);
+    }
+
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+
+    .app {
+      width: min(1440px, calc(100% - 48px));
+      margin: 0 auto;
+      padding: 30px 0 56px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .topbar {
+      height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 22px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo {
+      width: 48px;
+      height: 48px;
+      border-radius: 15px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: linear-gradient(145deg, #14171d, #343a45);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 14px 34px rgba(17,19,24,.22);
+      letter-spacing: -.04em;
+      font-weight: 800;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -.03em;
+      line-height: 1.1;
+    }
+
+    .brand p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .top-status {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 36px;
+      padding: 0 13px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255,255,255,.72);
+      box-shadow: 0 8px 22px rgba(21,31,46,.05);
+      color: #3d4350;
+      font-size: 13px;
+      backdrop-filter: blur(18px);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--green);
+      box-shadow: 0 0 0 4px rgba(34,197,94,.12);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 18px;
+      align-items: stretch;
+      margin-bottom: 18px;
+    }
+
+    .hero-card {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.65);
+      border-radius: var(--radius-lg);
+      background: linear-gradient(145deg, rgba(255,255,255,.92), rgba(255,255,255,.66));
+      box-shadow: var(--shadow);
+      padding: 34px;
+      backdrop-filter: blur(28px);
+    }
+
+    .hero-card::after {
+      content: "";
+      position: absolute;
+      right: -120px;
+      bottom: -180px;
+      width: 420px;
+      height: 420px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(10,132,255,.18), transparent 66%);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 16px;
+      color: #596070;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .02em;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 6px rgba(10,132,255,.12);
+    }
+
+    .hero-title {
+      margin: 0;
+      max-width: 680px;
+      font-size: clamp(34px, 4.5vw, 64px);
+      line-height: 1.04;
+      letter-spacing: -.065em;
+    }
+
+    .hero-desc {
+      max-width: 680px;
+      margin: 18px 0 0;
+      color: #4f5664;
+      font-size: 17px;
+      line-height: 1.72;
+      letter-spacing: -.02em;
+    }
+
+    .hero-side {
+      display: grid;
+      gap: 14px;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .metric {
+      min-height: 118px;
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: rgba(255,255,255,.7);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(24px);
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 30px;
+      letter-spacing: -.05em;
+    }
+
+    .metric span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .mini-panel {
+      min-height: 120px;
+      padding: 22px;
+      border-radius: 24px;
+      color: #fff;
+      background: linear-gradient(145deg, #14171d, #303744);
+      box-shadow: 0 22px 58px rgba(17,19,24,.24);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .mini-panel::after {
+      content: "";
+      position: absolute;
+      inset: auto -40px -70px auto;
+      width: 190px;
+      height: 190px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.12);
+    }
+
+    .mini-panel strong {
+      display: block;
+      font-size: 18px;
+      letter-spacing: -.03em;
+    }
+
+    .mini-panel p {
+      margin: 9px 0 0;
+      color: rgba(255,255,255,.7);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin: 20px 0;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: rgba(255,255,255,.58);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 18px 50px rgba(21,31,46,.07);
+    }
+
+    .tab {
+      min-height: 58px;
+      border: 0;
+      border-radius: 17px;
+      background: transparent;
+      color: #535b69;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 0 14px;
+      transition: .2s ease;
+    }
+
+    .tab strong {
+      font-size: 14px;
+      letter-spacing: -.02em;
+    }
+
+    .tab span {
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: rgba(17,19,24,.06);
+      font-size: 12px;
+      color: #7b8290;
+    }
+
+    .tab.active {
+      background: #111318;
+      color: #fff;
+      box-shadow: 0 14px 30px rgba(17,19,24,.18);
+    }
+
+    .tab.active span {
+      color: rgba(255,255,255,.82);
+      background: rgba(255,255,255,.12);
+    }
+
+    .studio {
+      display: grid;
+      grid-template-columns: 1fr minmax(380px, .88fr) 360px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid rgba(255,255,255,.72);
+      border-radius: var(--radius-lg);
+      background: var(--panel);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(30px);
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 22px 22px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-head h2 {
+      margin: 3px 0 0;
+      font-size: 19px;
+      letter-spacing: -.04em;
+    }
+
+    .kicker {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .upload-body {
+      padding: 18px;
+    }
+
+    .drop-zone {
+      position: relative;
+      min-height: 250px;
+      border: 1.5px dashed rgba(17,19,24,.18);
+      border-radius: 24px;
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.86), rgba(245,247,250,.78));
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 28px;
+      transition: .18s ease;
+      overflow: hidden;
+    }
+
+    .drop-zone::before {
+      content: "";
+      position: absolute;
+      inset: 12px;
+      border-radius: 20px;
+      background: radial-gradient(circle at 50% 20%, rgba(10,132,255,.12), transparent 54%);
+      pointer-events: none;
+    }
+
+    .drop-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(236,246,255,.9);
+      transform: translateY(-2px);
+    }
+
+    .drop-zone input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .upload-icon {
+      width: 74px;
+      height: 74px;
+      margin: 0 auto 18px;
+      border-radius: 24px;
+      display: grid;
+      place-items: center;
+      color: white;
+      background: linear-gradient(145deg, #0a84ff, #0065d8);
+      box-shadow: 0 18px 40px rgba(10,132,255,.28);
+      position: relative;
+      z-index: 1;
+    }
+
+    .upload-icon svg { width: 32px; height: 32px; }
+
+    .drop-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .drop-content strong {
+      display: block;
+      font-size: 22px;
+      letter-spacing: -.04em;
+    }
+
+    .drop-content p {
+      margin: 10px 0 16px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .upload-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 42px;
+      padding: 0 17px;
+      border: 0;
+      border-radius: 999px;
+      color: #fff;
+      background: #111318;
+      box-shadow: 0 13px 27px rgba(17,19,24,.18);
+      font-size: 14px;
+      font-weight: 750;
+    }
+
+    .hint-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .image-list {
+      margin-top: 18px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .image-card {
+      display: grid;
+      grid-template-columns: 74px 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,.76);
+      box-shadow: 0 10px 24px rgba(21,31,46,.05);
+    }
+
+    .image-card img {
+      width: 74px;
+      height: 56px;
+      object-fit: cover;
+      border-radius: 13px;
+      background: #e7eaf0;
+    }
+
+    .image-info strong {
+      display: block;
+      max-width: 230px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 13px;
+      letter-spacing: -.02em;
+    }
+
+    .image-info span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .icon-btn {
+      width: 34px;
+      height: 34px;
+      border: 0;
+      border-radius: 11px;
+      color: #535b69;
+      background: rgba(17,19,24,.06);
+      transition: .18s ease;
+    }
+
+    .icon-btn:hover { background: rgba(255,59,48,.12); color: #d92d20; }
+
+    .preview-panel {
+      min-height: 610px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .preview-stage-wrap {
+      padding: 18px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .preview-stage {
+      flex: 1;
+      min-height: 394px;
+      border-radius: 26px;
+      background:
+        linear-gradient(135deg, rgba(17,19,24,.9), rgba(43,48,58,.88)),
+        radial-gradient(circle at 70% 20%, rgba(10,132,255,.4), transparent 40%);
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      position: relative;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(0,0,0,.18);
+    }
+
+    .preview-stage::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+      background-size: 30px 30px;
+      mask-image: linear-gradient(180deg, rgba(0,0,0,.75), transparent 85%);
+    }
+
+    .empty-preview {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      color: rgba(255,255,255,.84);
+      padding: 28px;
+    }
+
+    .empty-preview .preview-icon {
+      width: 86px;
+      height: 86px;
+      border-radius: 30px;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 18px;
+      background: rgba(255,255,255,.12);
+      backdrop-filter: blur(18px);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.18);
+    }
+
+    .empty-preview strong {
+      display: block;
+      font-size: 20px;
+      letter-spacing: -.04em;
+    }
+
+    .empty-preview p {
+      margin: 9px 0 0;
+      color: rgba(255,255,255,.62);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .result-image {
+      position: relative;
+      z-index: 1;
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 20px;
+      box-shadow: 0 22px 58px rgba(0,0,0,.35);
+    }
+
+    .progress-wrap {
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(17,19,24,.08);
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #0a84ff, #30d158);
+      transition: width .18s ease;
+    }
+
+    .preview-footer {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .small-stat {
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 17px;
+      background: rgba(255,255,255,.64);
+    }
+
+    .small-stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .small-stat strong {
+      display: block;
+      margin-top: 5px;
+      font-size: 14px;
+      letter-spacing: -.02em;
+    }
+
+    .settings-panel {
+      overflow: hidden;
+    }
+
+    .setting-body {
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .field-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #303744;
+      font-size: 13px;
+      font-weight: 780;
+      letter-spacing: -.02em;
+    }
+
+    .field-label em {
+      color: var(--muted);
+      font-style: normal;
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .control, .field select, .field input[type="number"] {
+      width: 100%;
+      height: 48px;
+      border: 1px solid var(--line-strong);
+      border-radius: 16px;
+      padding: 0 14px;
+      background: rgba(255,255,255,.78);
+      outline: none;
+      color: #161a22;
+      transition: .18s ease;
+    }
+
+    .field select:focus, .field input[type="number"]:focus {
+      border-color: rgba(10,132,255,.55);
+      box-shadow: 0 0 0 5px rgba(10,132,255,.10);
+    }
+
+    .range-row {
+      display: grid;
+      grid-template-columns: 1fr 62px;
+      gap: 10px;
+      align-items: center;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: #111318;
+    }
+
+    .quality-box {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 15px;
+      border: 1px solid rgba(34,197,94,.2);
+      border-radius: 18px;
+      background: rgba(34,197,94,.08);
+    }
+
+    .quality-box i {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      flex: 0 0 22px;
+      background: var(--green);
+      box-shadow: 0 0 0 6px rgba(34,197,94,.12);
+      margin-top: 2px;
+    }
+
+    .quality-box strong {
+      display: block;
+      font-size: 13px;
+      letter-spacing: -.02em;
+    }
+
+    .quality-box p {
+      margin: 5px 0 0;
+      color: #4f6959;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .button-stack {
+      display: grid;
+      gap: 10px;
+      margin-top: 2px;
+    }
+
+    .primary-btn, .secondary-btn, .ghost-btn {
+      height: 52px;
+      border: 0;
+      border-radius: 18px;
+      font-weight: 850;
+      letter-spacing: -.02em;
+      transition: transform .16s ease, box-shadow .16s ease, opacity .16s ease;
+    }
+
+    .primary-btn {
+      color: #fff;
+      background: linear-gradient(145deg, #111318, #2d3440);
+      box-shadow: 0 18px 36px rgba(17,19,24,.22);
+    }
+
+    .secondary-btn {
+      color: #111318;
+      background: rgba(17,19,24,.07);
+    }
+
+    .ghost-btn {
+      height: 38px;
+      padding: 0 12px;
+      color: #535b69;
+      background: rgba(17,19,24,.06);
+      border-radius: 13px;
+      font-size: 13px;
+    }
+
+    .primary-btn:hover, .secondary-btn:hover, .ghost-btn:hover { transform: translateY(-1px); }
+    .primary-btn:disabled, .secondary-btn:disabled { opacity: .42; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 26px;
+      transform: translate(-50%, 18px);
+      opacity: 0;
+      pointer-events: none;
+      min-width: 280px;
+      max-width: min(520px, calc(100% - 40px));
+      padding: 14px 16px;
+      border-radius: 18px;
+      color: #fff;
+      background: rgba(17,19,24,.92);
+      box-shadow: 0 18px 50px rgba(17,19,24,.25);
+      backdrop-filter: blur(20px);
+      transition: .22s ease;
+      z-index: 30;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .toast.show {
+      transform: translate(-50%, 0);
+      opacity: 1;
+    }
+
+    @media (max-width: 1180px) {
+      .hero { grid-template-columns: 1fr; }
+      .studio { grid-template-columns: 1fr; }
+      .preview-panel { min-height: 520px; }
+    }
+
+    @media (max-width: 760px) {
+      .app { width: min(100% - 24px, 1440px); padding-top: 16px; }
+      .topbar { height: auto; align-items: flex-start; gap: 14px; flex-direction: column; }
+      .hero-card { padding: 24px; }
+      .metric-grid { grid-template-columns: 1fr; }
+      .tabs { grid-template-columns: 1fr; }
+      .tab { min-height: 52px; }
+      .preview-footer { grid-template-columns: 1fr; }
+      .hero-title { font-size: 38px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">CM</div>
+        <div>
+          <h1>Car Motion Studio</h1>
+          <p>자동차 사진 움짤 제작 도구</p>
+        </div>
+      </div>
+      <div class="top-status">
+        <span class="status-chip"><i class="status-dot"></i>브라우저 내부 처리</span>
+        <span class="status-chip">작업창 5개</span>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="hero-card">
+        <p class="eyebrow">Image to motion</p>
+        <h2 class="hero-title">자동차 사진을<br>움직이는 GIF로</h2>
+        <p class="hero-desc">이미지를 끌어 넣고 효과와 속도만 고르면, 블로그에 바로 넣을 수 있는 움직이는 이미지를 만듭니다.</p>
+      </div>
+      <aside class="hero-side">
+        <div class="metric-grid">
+          <div class="metric"><strong>2~10</strong><span>작업창마다 넣을 수 있는 이미지 수</span></div>
+          <div class="metric"><strong>1~10s</strong><span>사진 한 장당 노출 시간</span></div>
+          <div class="metric"><strong>2x</strong><span>느리게부터 빠르게 속도 조절</span></div>
+        </div>
+        <div class="mini-panel">
+          <strong>업로드, 미리보기, 설정, 결과를 한 화면에 배치</strong>
+          <p>이미지 들어간 상태를 바로 보고, 완성 GIF도 중앙 프리뷰에서 확인합니다.</p>
+        </div>
+      </aside>
+    </section>
+
+    <nav class="tabs" id="tabs" aria-label="작업창 선택"></nav>
+
+    <section class="studio">
+      <section class="panel upload-panel">
+        <div class="panel-head">
+          <div>
+            <span class="kicker">Source</span>
+            <h2>이미지 업로드</h2>
+          </div>
+          <button class="ghost-btn" type="button" id="clearBtn">전체 삭제</button>
+        </div>
+        <div class="upload-body">
+          <label class="drop-zone" id="dropZone">
+            <input id="fileInput" type="file" accept="image/*" multiple>
+            <div class="drop-content">
+              <div class="upload-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0 4.5 4.5M12 4 7.5 8.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 15v2.5A2.5 2.5 0 0 0 7.5 20h9a2.5 2.5 0 0 0 2.5-2.5V15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              </div>
+              <strong>여기로 이미지를 끌어오세요</strong>
+              <p>클릭해서 사진을 첨부해도 됩니다. JPG, PNG, WebP 지원</p>
+              <span class="upload-btn">사진 첨부하기</span>
+            </div>
+          </label>
+          <div class="hint-row">
+            <span>최소 2장, 최대 10장</span>
+            <span id="imageCount">0장 선택됨</span>
+          </div>
+          <div class="image-list" id="imageList"></div>
+        </div>
+      </section>
+
+      <section class="panel preview-panel">
+        <div class="panel-head">
+          <div>
+            <span class="kicker">Preview</span>
+            <h2>완성 이미지 미리보기</h2>
+          </div>
+          <button class="ghost-btn" type="button" id="resetResultBtn">결과 지우기</button>
+        </div>
+        <div class="preview-stage-wrap">
+          <div class="preview-stage" id="previewStage">
+            <div class="empty-preview" id="emptyPreview">
+              <div class="preview-icon">
+                <svg width="42" height="42" viewBox="0 0 24 24" fill="none"><path d="M4 16.5V7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5Z" stroke="currentColor" stroke-width="1.8"/><path d="m4.5 16 4.2-4.2a1.7 1.7 0 0 1 2.4 0l2.1 2.1 1.1-1.1a1.7 1.7 0 0 1 2.4 0l2.8 2.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M15.5 9.2h.01" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+              </div>
+              <strong>아직 만든 GIF가 없습니다</strong>
+              <p>왼쪽에 이미지를 넣고 오른쪽 설정을 고른 뒤 GIF 만들기를 누르세요.</p>
+            </div>
+          </div>
+          <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+          <div class="preview-footer">
+            <div class="small-stat"><span>이미지</span><strong id="statImages">0장</strong></div>
+            <div class="small-stat"><span>효과</span><strong id="statEffect">전진 줌</strong></div>
+            <div class="small-stat"><span>결과</span><strong id="statResult">대기 중</strong></div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="panel settings-panel">
+        <div class="panel-head">
+          <div>
+            <span class="kicker">Control</span>
+            <h2>움직임 설정</h2>
+          </div>
+        </div>
+        <div class="setting-body">
+          <label class="field">
+            <span class="field-label">효과 스타일 <em>자동차용</em></span>
+            <select id="effectSelect">
+              <option value="carPush" selected>전진 줌</option>
+              <option value="zoomIn">확대 효과</option>
+              <option value="zoomOut">축소 효과</option>
+              <option value="panLeft">좌우 이동</option>
+              <option value="diagonal">대각 이동</option>
+              <option value="handheld">실촬영 흔들림</option>
+              <option value="still">기본 전환</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span class="field-label">사진당 시간 <em><span id="secondsValue">2</span>초</em></span>
+            <div class="range-row">
+              <input id="secondsRange" type="range" min="1" max="10" step="1" value="2">
+              <input id="secondsNumber" type="number" min="1" max="10" step="1" value="2">
+            </div>
+          </label>
+
+          <label class="field">
+            <span class="field-label">속도 <em><span id="speedValue">1.00</span>배</em></span>
+            <div class="range-row">
+              <input id="speedRange" type="range" min="0.25" max="2" step="0.05" value="1">
+              <input id="speedNumber" type="number" min="0.25" max="2" step="0.05" value="1">
+            </div>
+          </label>
+
+          <label class="field">
+            <span class="field-label">화면 비율 <em>블로그용</em></span>
+            <select id="ratioSelect">
+              <option value="4:3" selected>4:3 기본</option>
+              <option value="1:1">1:1 정사각</option>
+              <option value="16:9">16:9 와이드</option>
+              <option value="3:4">3:4 세로</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span class="field-label">출력 크기 <em>긴 변 기준</em></span>
+            <select id="sizeSelect">
+              <option value="1000">1000px 빠른 생성</option>
+              <option value="1200" selected>1200px 기본</option>
+              <option value="1600">1600px 고화질</option>
+            </select>
+          </label>
+
+          <div class="quality-box">
+            <i></i>
+            <div>
+              <strong>자동 화질 보정 적용</strong>
+              <p>캔버스 고품질 리사이즈, 중심 크롭, 선명도 보정을 자동으로 적용합니다.</p>
+            </div>
+          </div>
+
+          <div class="button-stack">
+            <button class="primary-btn" id="makeBtn" type="button">GIF 만들기</button>
+            <button class="secondary-btn" id="downloadBtn" type="button" disabled>완성 GIF 다운로드</button>
+          </div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
+  <script>
+    const WORKER_URL = 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js';
+    const MAX_WORKSPACES = 5;
+    const MAX_IMAGES = 10;
+
+    const workspaces = Array.from({ length: MAX_WORKSPACES }, () => ({
+      images: [],
+      resultUrl: '',
+      resultName: '',
+      settings: {
+        effect: 'carPush',
+        seconds: 2,
+        speed: 1,
+        ratio: '4:3',
+        size: 1200
+      }
+    }));
+
+    let activeIndex = 0;
+
+    const tabs = document.getElementById('tabs');
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const imageList = document.getElementById('imageList');
+    const imageCount = document.getElementById('imageCount');
+    const previewStage = document.getElementById('previewStage');
+    const emptyPreview = document.getElementById('emptyPreview');
+    const progressBar = document.getElementById('progressBar');
+    const statImages = document.getElementById('statImages');
+    const statEffect = document.getElementById('statEffect');
+    const statResult = document.getElementById('statResult');
+    const clearBtn = document.getElementById('clearBtn');
+    const resetResultBtn = document.getElementById('resetResultBtn');
+    const effectSelect = document.getElementById('effectSelect');
+    const secondsRange = document.getElementById('secondsRange');
+    const secondsNumber = document.getElementById('secondsNumber');
+    const secondsValue = document.getElementById('secondsValue');
+    const speedRange = document.getElementById('speedRange');
+    const speedNumber = document.getElementById('speedNumber');
+    const speedValue = document.getElementById('speedValue');
+    const ratioSelect = document.getElementById('ratioSelect');
+    const sizeSelect = document.getElementById('sizeSelect');
+    const makeBtn = document.getElementById('makeBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const toast = document.getElementById('toast');
+
+    const effectNames = {
+      carPush: '전진 줌', zoomIn: '확대 효과', zoomOut: '축소 효과', panLeft: '좌우 이동', diagonal: '대각 이동', handheld: '실촬영 흔들림', still: '기본 전환'
+    };
+
+    init();
+
+    function init() {
+      renderTabs();
+      bindEvents();
+      renderAll();
+    }
+
+    function bindEvents() {
+      fileInput.addEventListener('change', (event) => handleFiles(event.target.files));
+
+      ['dragenter', 'dragover'].forEach((name) => dropZone.addEventListener(name, (event) => {
+        event.preventDefault();
+        dropZone.classList.add('dragover');
+      }));
+
+      ['dragleave', 'drop'].forEach((name) => dropZone.addEventListener(name, (event) => {
+        event.preventDefault();
+        dropZone.classList.remove('dragover');
+      }));
+
+      dropZone.addEventListener('drop', (event) => handleFiles(event.dataTransfer.files));
+
+      clearBtn.addEventListener('click', () => {
+        const local = current();
+        local.images.forEach((item) => URL.revokeObjectURL(item.url));
+        local.images = [];
+        resetResult();
+        renderAll();
+        showToast('현재 작업창 이미지를 모두 삭제했습니다.');
+      });
+
+      resetResultBtn.addEventListener('click', () => {
+        resetResult();
+        renderAll();
+      });
+
+      effectSelect.addEventListener('change', () => updateSetting('effect', effectSelect.value));
+      ratioSelect.addEventListener('change', () => updateSetting('ratio', ratioSelect.value));
+      sizeSelect.addEventListener('change', () => updateSetting('size', Number(sizeSelect.value)));
+
+      secondsRange.addEventListener('input', () => syncSeconds(secondsRange.value));
+      secondsNumber.addEventListener('input', () => syncSeconds(secondsNumber.value));
+      speedRange.addEventListener('input', () => syncSpeed(speedRange.value));
+      speedNumber.addEventListener('input', () => syncSpeed(speedNumber.value));
+
+      makeBtn.addEventListener('click', makeGif);
+      downloadBtn.addEventListener('click', () => {
+        const local = current();
+        if (!local.resultUrl) return;
+        const anchor = document.createElement('a');
+        anchor.href = local.resultUrl;
+        anchor.download = local.resultName || `car-motion-${activeIndex + 1}.gif`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+      });
+    }
+
+    function current() { return workspaces[activeIndex]; }
+
+    function renderTabs() {
+      tabs.innerHTML = '';
+      workspaces.forEach((space, index) => {
+        const button = document.createElement('button');
+        button.className = `tab ${index === activeIndex ? 'active' : ''}`;
+        button.type = 'button';
+        button.innerHTML = `<strong>작업 ${index + 1}</strong><span>${space.images.length ? `${space.images.length}장` : '비어 있음'}</span>`;
+        button.addEventListener('click', () => {
+          activeIndex = index;
+          renderAll();
+        });
+        tabs.appendChild(button);
+      });
+    }
+
+    async function handleFiles(fileList) {
+      const files = Array.from(fileList || []).filter((file) => file.type.startsWith('image/'));
+      if (!files.length) return;
+      const local = current();
+      const room = MAX_IMAGES - local.images.length;
+      if (room <= 0) {
+        showToast('이미지는 작업창당 최대 10장까지 넣을 수 있습니다.');
+        return;
+      }
+
+      const selected = files.slice(0, room);
+      const loaded = await Promise.all(selected.map(loadImageFile));
+      local.images.push(...loaded);
+      resetResult();
+      fileInput.value = '';
+      renderAll();
+
+      if (files.length > room) showToast(`최대 10장 제한으로 ${room}장만 추가했습니다.`);
+    }
+
+    function loadImageFile(file) {
+      return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const image = new Image();
+        image.onload = () => resolve({ file, url, image, width: image.naturalWidth, height: image.naturalHeight });
+        image.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error('이미지를 불러오지 못했습니다.'));
+        };
+        image.src = url;
+      });
+    }
+
+    function renderAll() {
+      const local = current();
+      renderTabs();
+      renderImages();
+      renderPreview();
+      syncControls();
+      statImages.textContent = `${local.images.length}장`;
+      statEffect.textContent = effectNames[local.settings.effect] || '효과';
+      statResult.textContent = local.resultUrl ? '완성됨' : '대기 중';
+      imageCount.textContent = `${local.images.length}장 선택됨`;
+      downloadBtn.disabled = !local.resultUrl;
+    }
+
+    function renderImages() {
+      const local = current();
+      imageList.innerHTML = '';
+
+      if (!local.images.length) {
+        imageList.innerHTML = '';
+        return;
+      }
+
+      local.images.forEach((item, index) => {
+        const card = document.createElement('div');
+        card.className = 'image-card';
+        card.innerHTML = `
+          <img src="${item.url}" alt="첨부 이미지 ${index + 1}">
+          <div class="image-info">
+            <strong>${escapeHtml(item.file.name)}</strong>
+            <span>${item.width}×${item.height}px, ${formatSize(item.file.size)}</span>
+          </div>
+          <button class="icon-btn" type="button" aria-label="이미지 삭제">×</button>
+        `;
+        card.querySelector('button').addEventListener('click', () => {
+          URL.revokeObjectURL(item.url);
+          local.images.splice(index, 1);
+          resetResult();
+          renderAll();
+        });
+        imageList.appendChild(card);
+      });
+    }
+
+    function renderPreview() {
+      const local = current();
+      const existing = previewStage.querySelector('.result-image');
+      if (existing) existing.remove();
+
+      if (local.resultUrl) {
+        emptyPreview.style.display = 'none';
+        const img = document.createElement('img');
+        img.className = 'result-image';
+        img.src = local.resultUrl;
+        img.alt = '완성 GIF 미리보기';
+        previewStage.appendChild(img);
+      } else {
+        emptyPreview.style.display = '';
+      }
+      progressBar.style.width = local.resultUrl ? '100%' : '0%';
+    }
+
+    function syncControls() {
+      const settings = current().settings;
+      effectSelect.value = settings.effect;
+      ratioSelect.value = settings.ratio;
+      sizeSelect.value = String(settings.size);
+      secondsRange.value = settings.seconds;
+      secondsNumber.value = settings.seconds;
+      secondsValue.textContent = settings.seconds;
+      speedRange.value = settings.speed;
+      speedNumber.value = settings.speed;
+      speedValue.textContent = Number(settings.speed).toFixed(2);
+    }
+
+    function syncSeconds(value) {
+      const clean = clamp(Math.round(Number(value) || 1), 1, 10);
+      updateSetting('seconds', clean);
+    }
+
+    function syncSpeed(value) {
+      const clean = clamp(Number(value) || 1, 0.25, 2);
+      updateSetting('speed', Math.round(clean * 100) / 100);
+    }
+
+    function updateSetting(key, value) {
+      current().settings[key] = value;
+      resetResult();
+      renderAll();
+    }
+
+    function resetResult() {
+      const local = current();
+      if (local.resultUrl) URL.revokeObjectURL(local.resultUrl);
+      local.resultUrl = '';
+      local.resultName = '';
+      progressBar.style.width = '0%';
+    }
+
+    async function makeGif() {
+      const local = current();
+      if (local.images.length < 2) {
+        showToast('이미지를 최소 2장 넣어야 GIF를 만들 수 있습니다.');
+        return;
+      }
+      if (typeof GIF === 'undefined') {
+        showToast('GIF 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인해주세요.');
+        return;
+      }
+
+      makeBtn.disabled = true;
+      downloadBtn.disabled = true;
+      statResult.textContent = '생성 중';
+      progressBar.style.width = '4%';
+
+      try {
+        const blob = await renderGif(local, (progress) => {
+          progressBar.style.width = `${Math.max(5, Math.round(progress * 100))}%`;
+        });
+        resetResult();
+        local.resultUrl = URL.createObjectURL(blob);
+        local.resultName = `car-motion-work-${activeIndex + 1}.gif`;
+        showToast('GIF가 완성됐습니다.');
+      } catch (error) {
+        showToast(error.message || 'GIF 생성 중 오류가 났습니다.');
+      } finally {
+        makeBtn.disabled = false;
+        renderAll();
+      }
+    }
+
+    function renderGif(local, onProgress) {
+      const { width, height } = getOutputSize(local.settings.ratio, local.settings.size);
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      const gif = new GIF({
+        workers: 2,
+        quality: 8,
+        width,
+        height,
+        workerScript: WORKER_URL,
+        background: '#ffffff'
+      });
+
+      const effectiveSeconds = local.settings.seconds / local.settings.speed;
+      const framesPerImage = clamp(Math.round(effectiveSeconds * 10), 5, 26);
+      const delay = Math.max(40, Math.round((effectiveSeconds * 1000) / framesPerImage));
+
+      for (const item of local.images) {
+        for (let i = 0; i < framesPerImage; i++) {
+          const t = framesPerImage <= 1 ? 1 : i / (framesPerImage - 1);
+          drawFrame(ctx, item.image, width, height, local.settings.effect, t);
+          gif.addFrame(ctx, { copy: true, delay });
+        }
+      }
+
+      return new Promise((resolve, reject) => {
+        gif.on('progress', (progress) => onProgress?.(progress));
+        gif.on('finished', (blob) => resolve(blob));
+        gif.on('abort', () => reject(new Error('GIF 생성이 중단됐습니다.')));
+        gif.render();
+      });
+    }
+
+    function drawFrame(ctx, image, width, height, effect, t) {
+      ctx.save();
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = '#f6f7f9';
+      ctx.fillRect(0, 0, width, height);
+
+      const base = coverRect(image.naturalWidth, image.naturalHeight, width, height);
+      const ease = easeInOut(t);
+      let scale = 1;
+      let moveX = 0;
+      let moveY = 0;
+      let rotate = 0;
+
+      if (effect === 'zoomIn') scale = 1 + ease * 0.14;
+      if (effect === 'zoomOut') scale = 1.14 - ease * 0.14;
+      if (effect === 'panLeft') { scale = 1.08; moveX = (ease - 0.5) * width * 0.09; }
+      if (effect === 'carPush') { scale = 1.03 + ease * 0.17; moveY = (0.5 - ease) * height * 0.018; }
+      if (effect === 'diagonal') { scale = 1.08; moveX = (ease - 0.5) * width * 0.07; moveY = (0.5 - ease) * height * 0.05; }
+      if (effect === 'handheld') { scale = 1.055; moveX = Math.sin(t * Math.PI * 8) * width * 0.006; moveY = Math.cos(t * Math.PI * 7) * height * 0.006; rotate = Math.sin(t * Math.PI * 6) * 0.004; }
+
+      ctx.translate(width / 2 + moveX, height / 2 + moveY);
+      ctx.rotate(rotate);
+      ctx.scale(scale, scale);
+      ctx.drawImage(image, base.x - width / 2, base.y - height / 2, base.w, base.h);
+      ctx.restore();
+
+      sharpen(ctx, width, height, 0.08);
+    }
+
+    function coverRect(srcW, srcH, dstW, dstH) {
+      const scale = Math.max(dstW / srcW, dstH / srcH);
+      const w = srcW * scale;
+      const h = srcH * scale;
+      return { x: (dstW - w) / 2, y: (dstH - h) / 2, w, h };
+    }
+
+    function getOutputSize(ratio, longSide) {
+      const [rw, rh] = ratio.split(':').map(Number);
+      if (rw >= rh) return { width: longSide, height: Math.round(longSide * rh / rw) };
+      return { width: Math.round(longSide * rw / rh), height: longSide };
+    }
+
+    function sharpen(ctx, width, height, amount) {
+      if (width * height > 1600 * 1200) return;
+      try {
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const data = imageData.data;
+        for (let i = 0; i < data.length; i += 4) {
+          data[i] = clamp(data[i] * (1 + amount), 0, 255);
+          data[i + 1] = clamp(data[i + 1] * (1 + amount), 0, 255);
+          data[i + 2] = clamp(data[i + 2] * (1 + amount), 0, 255);
+        }
+        ctx.putImageData(imageData, 0, 0);
+      } catch (_) {}
+    }
+
+    function easeInOut(t) { return t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
+    function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
+    function formatSize(bytes) { return `${(bytes / 1024 / 1024).toFixed(2)}MB`; }
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
+    }
+
+    let toastTimer;
+    function showToast(message) {
+      clearTimeout(toastTimer);
+      toast.textContent = message;
+      toast.classList.add('show');
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+    }
+  </script>
+</body>
+</html>
