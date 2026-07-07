@@ -899,7 +899,7 @@
           <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
           <div class="preview-footer">
             <div class="small-stat"><span>이미지</span><strong id="statImages">0장</strong></div>
-            <div class="small-stat"><span>효과</span><strong id="statEffect">확대 효과</strong></div>
+            <div class="small-stat"><span>효과</span><strong id="statEffect">부드러운 주행감</strong></div>
             <div class="small-stat"><span>결과</span><strong id="statResult">대기 중</strong></div>
           </div>
         </div>
@@ -916,7 +916,8 @@
           <label class="field">
             <span class="field-label">효과 스타일 <em>자동차용</em></span>
             <select id="effectSelect">
-              <option value="carPush" selected>전진 줌</option>
+              <option value="smoothDrive" selected>부드러운 주행감</option>
+              <option value="carPush">전진 줌</option>
               <option value="zoomIn">확대 효과</option>
               <option value="zoomOut">축소 효과</option>
               <option value="panLeft">좌우 이동</option>
@@ -927,18 +928,18 @@
           </label>
 
           <label class="field">
-            <span class="field-label">사진당 시간 <em><span id="secondsValue">1.5</span>초</em></span>
+            <span class="field-label">사진당 시간 <em><span id="secondsValue">2.5</span>초</em></span>
             <div class="range-row">
-              <input id="secondsRange" type="range" min="1" max="10" step="0.5" value="1.5">
-              <input id="secondsNumber" type="number" min="1" max="10" step="0.5" value="1.5">
+              <input id="secondsRange" type="range" min="1" max="10" step="0.5" value="2.5">
+              <input id="secondsNumber" type="number" min="1" max="10" step="0.5" value="2.5">
             </div>
           </label>
 
           <label class="field">
-            <span class="field-label">속도 <em><span id="speedValue">0.90</span>배</em></span>
+            <span class="field-label">속도 <em><span id="speedValue">0.80</span>배</em></span>
             <div class="range-row">
-              <input id="speedRange" type="range" min="0.25" max="2" step="0.05" value="0.9">
-              <input id="speedNumber" type="number" min="0.25" max="2" step="0.05" value="0.9">
+              <input id="speedRange" type="range" min="0.25" max="2" step="0.05" value="0.8">
+              <input id="speedNumber" type="number" min="0.25" max="2" step="0.05" value="0.8">
             </div>
           </label>
 
@@ -967,7 +968,7 @@
             <i style="background: var(--accent); box-shadow: 0 0 0 6px rgba(10,132,255,.12);"></i>
             <div>
               <strong>네이버 업로드 추천 프리셋</strong>
-              <p>이미지가 많거나 눈이 아프면 1:1, 800px, 1.5초, 속도 0.9배가 가장 무난합니다.</p>
+              <p>이미지가 많거나 눈이 아프면 1:1, 800px, 2.5초, 속도 0.8배, 부드러운 주행이 가장 무난합니다.</p>
             </div>
           </div>
 
@@ -1020,7 +1021,7 @@
       resultUrl: '',
       resultName: '',
       settings: {
-        effect: 'zoomIn',
+        effect: 'smoothDrive',
         seconds: 1.5,
         speed: 0.9,
         ratio: '1:1',
@@ -1057,6 +1058,7 @@
     const toast = document.getElementById('toast');
 
     const effectNames = {
+      smoothDrive: '부드러운 주행감',
       carPush: '전진 줌', zoomIn: '확대 효과', zoomOut: '축소 효과', panLeft: '좌우 이동', diagonal: '대각 이동', handheld: '실촬영 흔들림', still: '기본 전환'
     };
 
@@ -1321,13 +1323,13 @@
       });
 
       const effectiveSeconds = local.settings.seconds / local.settings.speed;
-      const framesPerImage = getFramesPerImage(effectiveSeconds, local.settings.effect, local.settings.size);
+      const framesPerImage = getFramesPerImage(effectiveSeconds, local.settings.effect, local.settings.size, local.images.length);
       const delay = Math.max(60, Math.round((effectiveSeconds * 1000) / framesPerImage));
 
       for (const item of local.images) {
         for (let i = 0; i < framesPerImage; i++) {
           const t = framesPerImage <= 1 ? 1 : i / (framesPerImage - 1);
-          drawFrame(ctx, item.image, width, height, local.settings.effect, t);
+          drawFrame(ctx, item.image, width, height, local.settings.effect, t, local.images.length === 1);
           gif.addFrame(ctx, { copy: true, delay });
         }
       }
@@ -1340,7 +1342,7 @@
       });
     }
 
-    function drawFrame(ctx, image, width, height, effect, t) {
+    function drawFrame(ctx, image, width, height, effect, t, singleMode = false) {
       ctx.save();
       ctx.clearRect(0, 0, width, height);
       ctx.fillStyle = '#f6f7f9';
@@ -1348,17 +1350,31 @@
 
       const base = coverRect(image.naturalWidth, image.naturalHeight, width, height);
       const ease = easeInOut(t);
+      const loop = loopProgress(t);
+      const swing = loopSwing(t);
       let scale = 1;
       let moveX = 0;
       let moveY = 0;
       let rotate = 0;
 
-      if (effect === 'zoomIn') scale = 1 + ease * 0.10;
-      if (effect === 'zoomOut') scale = 1.10 - ease * 0.10;
-      if (effect === 'panLeft') { scale = 1.05; moveX = (ease - 0.5) * width * 0.06; }
-      if (effect === 'carPush') { scale = 1.02 + ease * 0.11; moveY = (0.5 - ease) * height * 0.012; }
-      if (effect === 'diagonal') { scale = 1.05; moveX = (ease - 0.5) * width * 0.05; moveY = (0.5 - ease) * height * 0.035; }
-      if (effect === 'handheld') { scale = 1.04; moveX = Math.sin(t * Math.PI * 8) * width * 0.004; moveY = Math.cos(t * Math.PI * 7) * height * 0.004; rotate = Math.sin(t * Math.PI * 6) * 0.003; }
+      if (singleMode) {
+        if (effect === 'smoothDrive') { scale = 1.03 + loop * 0.055; moveX = swing * width * 0.016; moveY = -loop * height * 0.006; }
+        if (effect === 'zoomIn') scale = 1.02 + loop * 0.075;
+        if (effect === 'zoomOut') scale = 1.095 - loop * 0.075;
+        if (effect === 'panLeft') { scale = 1.045; moveX = swing * width * 0.022; }
+        if (effect === 'carPush') { scale = 1.025 + loop * 0.07; moveX = swing * width * 0.010; moveY = -loop * height * 0.008; }
+        if (effect === 'diagonal') { scale = 1.045; moveX = swing * width * 0.018; moveY = -swing * height * 0.010; }
+        if (effect === 'handheld') { scale = 1.03 + loop * 0.02; moveX = Math.sin(t * Math.PI * 2) * width * 0.003; moveY = Math.cos(t * Math.PI * 2) * height * 0.003; rotate = Math.sin(t * Math.PI * 2) * 0.0018; }
+        if (effect === 'still') { scale = 1.02 + loop * 0.02; }
+      } else {
+        if (effect === 'smoothDrive') { scale = 1.03 + ease * 0.08; moveX = (ease - 0.5) * width * 0.030; moveY = (0.5 - ease) * height * 0.008; }
+        if (effect === 'zoomIn') scale = 1 + ease * 0.10;
+        if (effect === 'zoomOut') scale = 1.10 - ease * 0.10;
+        if (effect === 'panLeft') { scale = 1.05; moveX = (ease - 0.5) * width * 0.06; }
+        if (effect === 'carPush') { scale = 1.02 + ease * 0.11; moveY = (0.5 - ease) * height * 0.012; }
+        if (effect === 'diagonal') { scale = 1.05; moveX = (ease - 0.5) * width * 0.05; moveY = (0.5 - ease) * height * 0.035; }
+        if (effect === 'handheld') { scale = 1.04; moveX = Math.sin(t * Math.PI * 8) * width * 0.004; moveY = Math.cos(t * Math.PI * 7) * height * 0.004; rotate = Math.sin(t * Math.PI * 6) * 0.003; }
+      }
 
       ctx.translate(width / 2 + moveX, height / 2 + moveY);
       ctx.rotate(rotate);
@@ -1396,8 +1412,16 @@
       } catch (_) {}
     }
 
-    function getFramesPerImage(effectiveSeconds, effect, size) {
-      let base = effectiveSeconds <= 1 ? 6 : effectiveSeconds <= 1.5 ? 8 : effectiveSeconds <= 2 ? 10 : 12;
+    function getFramesPerImage(effectiveSeconds, effect, size, imageCount = 1) {
+      let base;
+      if (imageCount === 1) {
+        base = effectiveSeconds <= 1 ? 12 : effectiveSeconds <= 1.5 ? 16 : effectiveSeconds <= 2 ? 20 : effectiveSeconds <= 3 ? 24 : 28;
+        if (effect === 'still') base = Math.max(10, base - 4);
+        if (effect === 'handheld') base += 2;
+        if (size <= 720) base = Math.max(10, base - 2);
+        return clamp(Math.round(base), 10, 30);
+      }
+      base = effectiveSeconds <= 1 ? 6 : effectiveSeconds <= 1.5 ? 8 : effectiveSeconds <= 2 ? 10 : 12;
       if (effect === 'still') base = Math.max(4, base - 2);
       if (effect === 'handheld') base += 1;
       if (size <= 720) base = Math.max(4, base - 1);
@@ -1416,7 +1440,7 @@
       const count = Math.max(local.images.length, 1);
       const { width, height } = getOutputSize(local.settings.ratio, local.settings.size);
       const effectiveSeconds = local.settings.seconds / local.settings.speed;
-      const frames = getFramesPerImage(effectiveSeconds, local.settings.effect, local.settings.size) * count;
+      const frames = getFramesPerImage(effectiveSeconds, local.settings.effect, local.settings.size, count) * count;
       const megapixels = (width * height) / 1000000;
       const estimatedMb = Math.max(0.6, megapixels * frames * 0.18);
       return { estimatedMb, width, height, count };
@@ -1440,6 +1464,8 @@
       estimateDesc.textContent = message;
     }
 
+    function loopProgress(t) { return (1 - Math.cos(t * Math.PI * 2)) / 2; }
+    function loopSwing(t) { return Math.sin(t * Math.PI * 2); }
     function easeInOut(t) { return t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
     function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
     function formatSize(bytes) { return `${(bytes / 1024 / 1024).toFixed(2)}MB`; }
