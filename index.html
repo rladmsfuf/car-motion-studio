@@ -842,7 +842,7 @@
         </div>
         <div class="mini-panel">
           <strong>업로드, 미리보기, 설정, 결과를 한 화면에 배치</strong>
-          <p>1장만 넣어도 줌, 이동, 흔들림 효과를 넣어 움직이는 GIF로 만들 수 있습니다.</p>
+          <p>이미지 들어간 상태를 바로 보고, 완성 GIF도 중앙 프리뷰에서 확인합니다.</p>
         </div>
       </aside>
     </section>
@@ -1038,6 +1038,11 @@
     const previewStage = document.getElementById('previewStage');
     const emptyPreview = document.getElementById('emptyPreview');
     const progressBar = document.getElementById('progressBar');
+    const statImages = document.getElementById('statImages');
+    const statEffect = document.getElementById('statEffect');
+    const statResult = document.getElementById('statResult');
+    const clearBtn = document.getElementById('clearBtn');
+    const resetResultBtn = document.getElementById('resetResultBtn');
     const effectSelect = document.getElementById('effectSelect');
     const secondsRange = document.getElementById('secondsRange');
     const secondsNumber = document.getElementById('secondsNumber');
@@ -1049,58 +1054,70 @@
     const sizeSelect = document.getElementById('sizeSelect');
     const makeBtn = document.getElementById('makeBtn');
     const downloadBtn = document.getElementById('downloadBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const resetResultBtn = document.getElementById('resetResultBtn');
-    const statImages = document.getElementById('statImages');
-    const statEffect = document.getElementById('statEffect');
-    const statResult = document.getElementById('statResult');
-    const estimateLabel = document.getElementById('estimateLabel');
-    const estimateDesc = document.getElementById('estimateDesc');
     const toast = document.getElementById('toast');
 
     const effectNames = {
-      carPush: '전진 줌',
-      zoomIn: '확대 효과',
-      zoomOut: '축소 효과',
-      panLeft: '좌우 이동',
-      diagonal: '대각 이동',
-      handheld: '실촬영 흔들림',
-      still: '기본 전환'
+      carPush: '전진 줌', zoomIn: '확대 효과', zoomOut: '축소 효과', panLeft: '좌우 이동', diagonal: '대각 이동', handheld: '실촬영 흔들림', still: '기본 전환'
     };
 
-    renderAll();
+    init();
 
-    fileInput.addEventListener('change', (event) => handleFiles(event.target.files));
+    function init() {
+      renderTabs();
+      bindEvents();
+      renderAll();
+    }
 
-    ['dragenter', 'dragover'].forEach((name) => {
-      dropZone.addEventListener(name, (event) => {
+    function bindEvents() {
+      fileInput.addEventListener('change', (event) => handleFiles(event.target.files));
+
+      ['dragenter', 'dragover'].forEach((name) => dropZone.addEventListener(name, (event) => {
         event.preventDefault();
         dropZone.classList.add('dragover');
-      });
-    });
+      }));
 
-    ['dragleave', 'drop'].forEach((name) => {
-      dropZone.addEventListener(name, (event) => {
+      ['dragleave', 'drop'].forEach((name) => dropZone.addEventListener(name, (event) => {
         event.preventDefault();
         dropZone.classList.remove('dragover');
+      }));
+
+      dropZone.addEventListener('drop', (event) => handleFiles(event.dataTransfer.files));
+
+      clearBtn.addEventListener('click', () => {
+        const local = current();
+        local.images.forEach((item) => URL.revokeObjectURL(item.url));
+        local.images = [];
+        resetResult();
+        renderAll();
+        showToast('현재 작업창 이미지를 모두 삭제했습니다.');
       });
-    });
 
-    dropZone.addEventListener('drop', (event) => handleFiles(event.dataTransfer.files));
+      resetResultBtn.addEventListener('click', () => {
+        resetResult();
+        renderAll();
+      });
 
-    effectSelect.addEventListener('change', () => updateSetting('effect', effectSelect.value));
-    ratioSelect.addEventListener('change', () => updateSetting('ratio', ratioSelect.value));
-    sizeSelect.addEventListener('change', () => updateSetting('size', Number(sizeSelect.value)));
+      effectSelect.addEventListener('change', () => updateSetting('effect', effectSelect.value));
+      ratioSelect.addEventListener('change', () => updateSetting('ratio', ratioSelect.value));
+      sizeSelect.addEventListener('change', () => updateSetting('size', Number(sizeSelect.value)));
 
-    secondsRange.addEventListener('input', () => syncSeconds(secondsRange.value));
-    secondsNumber.addEventListener('change', () => syncSeconds(secondsNumber.value));
-    speedRange.addEventListener('input', () => syncSpeed(speedRange.value));
-    speedNumber.addEventListener('change', () => syncSpeed(speedNumber.value));
+      secondsRange.addEventListener('input', () => syncSeconds(secondsRange.value));
+      secondsNumber.addEventListener('input', () => syncSeconds(secondsNumber.value));
+      speedRange.addEventListener('input', () => syncSpeed(speedRange.value));
+      speedNumber.addEventListener('input', () => syncSpeed(speedNumber.value));
 
-    makeBtn.addEventListener('click', makeGif);
-    downloadBtn.addEventListener('click', downloadResult);
-    resetResultBtn.addEventListener('click', () => { resetResult(); renderAll(); });
-    clearBtn.addEventListener('click', clearImages);
+      makeBtn.addEventListener('click', makeGif);
+      downloadBtn.addEventListener('click', () => {
+        const local = current();
+        if (!local.resultUrl) return;
+        const anchor = document.createElement('a');
+        anchor.href = local.resultUrl;
+        anchor.download = local.resultName || `car-motion-${activeIndex + 1}.gif`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+      });
+    }
 
     function current() { return workspaces[activeIndex]; }
 
@@ -1108,8 +1125,8 @@
       tabs.innerHTML = '';
       workspaces.forEach((space, index) => {
         const button = document.createElement('button');
-        button.type = 'button';
         button.className = `tab ${index === activeIndex ? 'active' : ''}`;
+        button.type = 'button';
         button.innerHTML = `<strong>작업 ${index + 1}</strong><span>${space.images.length ? `${space.images.length}장` : '비어 있음'}</span>`;
         button.addEventListener('click', () => {
           activeIndex = index;
