@@ -838,7 +838,7 @@
         <div class="metric-grid">
           <div class="metric"><strong>2~10</strong><span>작업창마다 넣을 수 있는 이미지 수</span></div>
           <div class="metric"><strong>1~10s</strong><span>사진 한 장당 노출 시간</span></div>
-          <div class="metric"><strong>2x</strong><span>느리게부터 빠르게 속도 조절</span></div>
+          <div class="metric"><strong>640~1000px</strong><span>네이버용 저용량 크기 지원</span></div>
         </div>
         <div class="mini-panel">
           <strong>업로드, 미리보기, 설정, 결과를 한 화면에 배치</strong>
@@ -899,7 +899,7 @@
           <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
           <div class="preview-footer">
             <div class="small-stat"><span>이미지</span><strong id="statImages">0장</strong></div>
-            <div class="small-stat"><span>효과</span><strong id="statEffect">전진 줌</strong></div>
+            <div class="small-stat"><span>효과</span><strong id="statEffect">확대 효과</strong></div>
             <div class="small-stat"><span>결과</span><strong id="statResult">대기 중</strong></div>
           </div>
         </div>
@@ -927,39 +927,57 @@
           </label>
 
           <label class="field">
-            <span class="field-label">사진당 시간 <em><span id="secondsValue">2</span>초</em></span>
+            <span class="field-label">사진당 시간 <em><span id="secondsValue">1.5</span>초</em></span>
             <div class="range-row">
-              <input id="secondsRange" type="range" min="1" max="10" step="1" value="2">
-              <input id="secondsNumber" type="number" min="1" max="10" step="1" value="2">
+              <input id="secondsRange" type="range" min="1" max="10" step="0.5" value="1.5">
+              <input id="secondsNumber" type="number" min="1" max="10" step="0.5" value="1.5">
             </div>
           </label>
 
           <label class="field">
-            <span class="field-label">속도 <em><span id="speedValue">1.00</span>배</em></span>
+            <span class="field-label">속도 <em><span id="speedValue">0.90</span>배</em></span>
             <div class="range-row">
-              <input id="speedRange" type="range" min="0.25" max="2" step="0.05" value="1">
-              <input id="speedNumber" type="number" min="0.25" max="2" step="0.05" value="1">
+              <input id="speedRange" type="range" min="0.25" max="2" step="0.05" value="0.9">
+              <input id="speedNumber" type="number" min="0.25" max="2" step="0.05" value="0.9">
             </div>
           </label>
 
           <label class="field">
             <span class="field-label">화면 비율 <em>블로그용</em></span>
             <select id="ratioSelect">
-              <option value="4:3" selected>4:3 기본</option>
-              <option value="1:1">1:1 정사각</option>
-              <option value="16:9">16:9 와이드</option>
+              <option value="1:1" selected>1:1 정사각</option>
+              <option value="4:5">4:5 세로형</option>
               <option value="3:4">3:4 세로</option>
+              <option value="4:3">4:3 기본</option>
+              <option value="16:9">16:9 와이드</option>
             </select>
           </label>
 
           <label class="field">
             <span class="field-label">출력 크기 <em>긴 변 기준</em></span>
             <select id="sizeSelect">
-              <option value="1000">1000px 빠른 생성</option>
-              <option value="1200" selected>1200px 기본</option>
-              <option value="1600">1600px 고화질</option>
+              <option value="640">640px 초경량</option>
+              <option value="720">720px 저용량</option>
+              <option value="800" selected>800px 네이버 추천</option>
+              <option value="1000">1000px 선명형</option>
             </select>
           </label>
+
+          <div class="quality-box" id="naverPresetBox" style="background: rgba(10,132,255,.07); border-color: rgba(10,132,255,.16);">
+            <i style="background: var(--accent); box-shadow: 0 0 0 6px rgba(10,132,255,.12);"></i>
+            <div>
+              <strong>네이버 업로드 추천 프리셋</strong>
+              <p>이미지가 많거나 눈이 아프면 1:1, 800px, 1.5초, 속도 0.9배가 가장 무난합니다.</p>
+            </div>
+          </div>
+
+          <div class="quality-box" id="estimateBox">
+            <i></i>
+            <div>
+              <strong>예상 용량 <span id="estimateLabel">가볍게 예상 중</span></strong>
+              <p id="estimateDesc">현재 설정 기준으로 네이버 업로드 가능성을 미리 보여줍니다.</p>
+            </div>
+          </div>
 
           <div class="quality-box">
             <i></i>
@@ -1002,11 +1020,11 @@
       resultUrl: '',
       resultName: '',
       settings: {
-        effect: 'carPush',
-        seconds: 2,
-        speed: 1,
-        ratio: '4:3',
-        size: 1200
+        effect: 'zoomIn',
+        seconds: 1.5,
+        speed: 0.9,
+        ratio: '1:1',
+        size: 800
       }
     }));
 
@@ -1162,6 +1180,7 @@
       statResult.textContent = local.resultUrl ? '완성됨' : '대기 중';
       imageCount.textContent = `${local.images.length}장 선택됨`;
       downloadBtn.disabled = !local.resultUrl;
+      updateEstimate();
     }
 
     function renderImages() {
@@ -1226,7 +1245,7 @@
     }
 
     function syncSeconds(value) {
-      const clean = clamp(Math.round(Number(value) || 1), 1, 10);
+      const clean = Math.round(clamp(Number(value) || 1, 1, 10) * 2) / 2;
       updateSetting('seconds', clean);
     }
 
@@ -1294,7 +1313,7 @@
 
       const gif = new GIF({
         workers: 2,
-        quality: 8,
+        quality: getGifQuality(local.settings.size),
         width,
         height,
         workerScript: workerUrl,
@@ -1302,8 +1321,8 @@
       });
 
       const effectiveSeconds = local.settings.seconds / local.settings.speed;
-      const framesPerImage = clamp(Math.round(effectiveSeconds * 10), 5, 26);
-      const delay = Math.max(40, Math.round((effectiveSeconds * 1000) / framesPerImage));
+      const framesPerImage = getFramesPerImage(effectiveSeconds, local.settings.effect, local.settings.size);
+      const delay = Math.max(60, Math.round((effectiveSeconds * 1000) / framesPerImage));
 
       for (const item of local.images) {
         for (let i = 0; i < framesPerImage; i++) {
@@ -1334,12 +1353,12 @@
       let moveY = 0;
       let rotate = 0;
 
-      if (effect === 'zoomIn') scale = 1 + ease * 0.14;
-      if (effect === 'zoomOut') scale = 1.14 - ease * 0.14;
-      if (effect === 'panLeft') { scale = 1.08; moveX = (ease - 0.5) * width * 0.09; }
-      if (effect === 'carPush') { scale = 1.03 + ease * 0.17; moveY = (0.5 - ease) * height * 0.018; }
-      if (effect === 'diagonal') { scale = 1.08; moveX = (ease - 0.5) * width * 0.07; moveY = (0.5 - ease) * height * 0.05; }
-      if (effect === 'handheld') { scale = 1.055; moveX = Math.sin(t * Math.PI * 8) * width * 0.006; moveY = Math.cos(t * Math.PI * 7) * height * 0.006; rotate = Math.sin(t * Math.PI * 6) * 0.004; }
+      if (effect === 'zoomIn') scale = 1 + ease * 0.10;
+      if (effect === 'zoomOut') scale = 1.10 - ease * 0.10;
+      if (effect === 'panLeft') { scale = 1.05; moveX = (ease - 0.5) * width * 0.06; }
+      if (effect === 'carPush') { scale = 1.02 + ease * 0.11; moveY = (0.5 - ease) * height * 0.012; }
+      if (effect === 'diagonal') { scale = 1.05; moveX = (ease - 0.5) * width * 0.05; moveY = (0.5 - ease) * height * 0.035; }
+      if (effect === 'handheld') { scale = 1.04; moveX = Math.sin(t * Math.PI * 8) * width * 0.004; moveY = Math.cos(t * Math.PI * 7) * height * 0.004; rotate = Math.sin(t * Math.PI * 6) * 0.003; }
 
       ctx.translate(width / 2 + moveX, height / 2 + moveY);
       ctx.rotate(rotate);
@@ -1375,6 +1394,50 @@
         }
         ctx.putImageData(imageData, 0, 0);
       } catch (_) {}
+    }
+
+    function getFramesPerImage(effectiveSeconds, effect, size) {
+      let base = effectiveSeconds <= 1 ? 6 : effectiveSeconds <= 1.5 ? 8 : effectiveSeconds <= 2 ? 10 : 12;
+      if (effect === 'still') base = Math.max(4, base - 2);
+      if (effect === 'handheld') base += 1;
+      if (size <= 720) base = Math.max(4, base - 1);
+      return clamp(Math.round(base), 4, 14);
+    }
+
+    function getGifQuality(size) {
+      if (size <= 640) return 16;
+      if (size <= 720) return 14;
+      if (size <= 800) return 12;
+      return 10;
+    }
+
+    function estimateOutput() {
+      const local = current();
+      const count = Math.max(local.images.length, 2);
+      const { width, height } = getOutputSize(local.settings.ratio, local.settings.size);
+      const effectiveSeconds = local.settings.seconds / local.settings.speed;
+      const frames = getFramesPerImage(effectiveSeconds, local.settings.effect, local.settings.size) * count;
+      const megapixels = (width * height) / 1000000;
+      const estimatedMb = Math.max(0.6, megapixels * frames * 0.18);
+      return { estimatedMb, width, height, count };
+    }
+
+    function updateEstimate() {
+      const { estimatedMb, width, height, count } = estimateOutput();
+      let label = '';
+      let message = `${width}×${height}px, ${count}장 기준 예상 용량 ${estimatedMb.toFixed(1)}MB`;
+      if (estimatedMb <= 8) {
+        label = '업로드 여유';
+        message += ' , 네이버 업로드 가능성이 높습니다.';
+      } else if (estimatedMb <= 14) {
+        label = '업로드 가능권';
+        message += ' , 대부분 가능하지만 이미지가 많으면 실패할 수 있습니다.';
+      } else {
+        label = '용량 큼';
+        message += ' , 720px 또는 800px, 1:1 비율을 추천합니다.';
+      }
+      estimateLabel.textContent = label;
+      estimateDesc.textContent = message;
     }
 
     function easeInOut(t) { return t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
