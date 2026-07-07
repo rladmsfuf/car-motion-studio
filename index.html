@@ -982,7 +982,18 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
   <script>
-    const WORKER_URL = 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js';
+    const WORKER_CDN_URL = 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js';
+    let workerBlobUrl = '';
+
+    async function getGifWorkerUrl() {
+      if (workerBlobUrl) return workerBlobUrl;
+      const response = await fetch(WORKER_CDN_URL, { mode: 'cors', cache: 'force-cache' });
+      if (!response.ok) throw new Error('GIF 작업 파일을 불러오지 못했습니다. 인터넷 연결을 확인해주세요.');
+      const workerSource = await response.text();
+      const workerBlob = new Blob([workerSource], { type: 'application/javascript' });
+      workerBlobUrl = URL.createObjectURL(workerBlob);
+      return workerBlobUrl;
+    }
     const MAX_WORKSPACES = 5;
     const MAX_IMAGES = 10;
 
@@ -1270,7 +1281,7 @@
       }
     }
 
-    function renderGif(local, onProgress) {
+    async function renderGif(local, onProgress) {
       const { width, height } = getOutputSize(local.settings.ratio, local.settings.size);
       const canvas = document.createElement('canvas');
       canvas.width = width;
@@ -1279,12 +1290,14 @@
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
 
+      const workerUrl = await getGifWorkerUrl();
+
       const gif = new GIF({
         workers: 2,
         quality: 8,
         width,
         height,
-        workerScript: WORKER_URL,
+        workerScript: workerUrl,
         background: '#ffffff'
       });
 
